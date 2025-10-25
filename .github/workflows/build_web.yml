@@ -2,59 +2,29 @@ name: Build and Deploy Godot Web
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch: {}
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y unzip wget
+      - name: Setup Godot
+        uses: firebelley/setup-godot@v1.2.3
+        with:
+          godot-version: 4.2.2
+          use-dotnet: false
 
-    - name: Download Godot Headless + Export Templates
-      run: |
-        GODOT_VER=3.5.1
-        mkdir -p godot
-        wget -q -O godot_headless.zip "https://downloads.tuxfamily.org/godotengine/$GODOT_VER/godot-headless-$GODOT_VER-stable_linux_headless.64.zip"
-        unzip -q godot_headless.zip -d godot
-        chmod +x godot/Godot*
+      - name: Export HTML5
+        run: |
+          mkdir -p build/web
+          godot --headless --export-release "Web" build/web/index.html
 
-        wget -q -O export_templates.tpz "https://downloads.tuxfamily.org/godotengine/$GODOT_VER/godot-$GODOT_VER-stable-export_templates.tpz"
-        mkdir -p ~/.local/share/godot/templates/$GODOT_VER
-        unzip -q export_templates.tpz -d ~/.local/share/godot/templates/$GODOT_VER
-
-    - name: Create export preset for HTML5
-      run: |
-        cat > export_presets.cfg <<'EOF'
-        [preset.0]
-        name="HTML5"
-        platform="HTML5"
-        export_path="build/index.html"
-        html/canvas_resize_policy=2
-        html/head_include=""
-        html/variant_export_mode=0
-        html/vram_texture_compression/for_desktop=true
-        html/vram_texture_compression/for_mobile=true
-        EOF
-
-    - name: Export to HTML5
-      run: |
-        ./godot/Godot* --headless --export "HTML5" build/index.html
-
-    - name: Upload build folder
-      uses: actions/upload-artifact@v4
-      with:
-        name: web-build
-        path: build/
-
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: build
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/web
