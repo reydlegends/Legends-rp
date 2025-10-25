@@ -13,40 +13,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Godot
-        uses: lampeh/setup-godot@v2
-        with:
-          godot-version: 3.5.1
-
-      - name: Create export preset for HTML5
+      - name: Install dependencies
         run: |
-          mkdir -p ~/.local/share/godot/templates/3.5.1
-          cat > export_presets.cfg <<EOF
-          [preset.0]
-          name="HTML5"
-          platform="HTML5"
-          export_path="build/index.html"
-          [preset.0.options]
-          html/canvas_resize_policy=2
-          html/head_include=""
-          html/variant_export_mode=0
-          html/vram_texture_compression/for_desktop=true
-          html/vram_texture_compression/for_mobile=true
-          EOF
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
 
-      - name: Export to HTML5
+      - name: Download Godot Headless + Export Templates
         run: |
-          mkdir -p build
-          godot --headless --export "HTML5" build/index.html
-
-      - name: Upload build folder
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-build
-          path: build
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: build
+          GODOT_VERSION=3.5.1
+          wget https://downloads.tuxfamily.org/godotengine/$GODOT_VERSION/Godot_v${GODOT_VERSION}-stable_linux_headless.64.zip -O godot.zip
+          unzip godot.zip -d godot
+          chmod +x godot/Godot_v${GODOT_VERSION}-stable_linux_headless.64
+          wget https://downloads.tuxfamily.org/godotengine/$GODOT_VERSION/Godot_v
