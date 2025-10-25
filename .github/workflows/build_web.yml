@@ -24,4 +24,32 @@ jobs:
           wget https://downloads.tuxfamily.org/godotengine/$GODOT_VERSION/Godot_v${GODOT_VERSION}-stable_linux_headless.64.zip -O godot.zip
           unzip godot.zip -d godot
           chmod +x godot/Godot_v${GODOT_VERSION}-stable_linux_headless.64
-          wget https://downloads.tuxfamily.org/godotengine/$GODOT_VERSION/Godot_v
+          wget https://downloads.tuxfamily.org/godotengine/$GODOT_VERSION/Godot_v${GODOT_VERSION}-stable_export_templates.tpz -O templates.tpz
+          mkdir -p ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+          unzip templates.tpz -d ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+
+      - name: Create export preset for HTML5
+        run: |
+          cat > export_presets.cfg <<EOF
+          [preset.0]
+          name="HTML5"
+          platform="HTML5"
+          export_path="build/index.html"
+          [preset.0.options]
+          html/canvas_resize_policy=2
+          html/head_include=""
+          html/variant_export_mode=0
+          html/vram_texture_compression/for_desktop=true
+          html/vram_texture_compression/for_mobile=true
+          EOF
+
+      - name: Export project to HTML5
+        run: |
+          mkdir -p build
+          ./godot/Godot_v3.5.1-stable_linux_headless.64 --headless --path . --export "HTML5" build/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build
