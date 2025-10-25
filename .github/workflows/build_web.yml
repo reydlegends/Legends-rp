@@ -2,29 +2,51 @@ name: Build and Deploy Godot Web
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Godot
-        uses: firebelley/setup-godot@v1.2.3
+        uses: lampeh/setup-godot@v2
         with:
-          godot-version: 4.2.2
-          use-dotnet: false
+          godot-version: 3.5.1
 
-      - name: Export HTML5
+      - name: Create export preset for HTML5
         run: |
-          mkdir -p build/web
-          godot --headless --export-release "Web" build/web/index.html
+          mkdir -p ~/.local/share/godot/templates/3.5.1
+          cat > export_presets.cfg <<EOF
+          [preset.0]
+          name="HTML5"
+          platform="HTML5"
+          export_path="build/index.html"
+          [preset.0.options]
+          html/canvas_resize_policy=2
+          html/head_include=""
+          html/variant_export_mode=0
+          html/vram_texture_compression/for_desktop=true
+          html/vram_texture_compression/for_mobile=true
+          EOF
+
+      - name: Export to HTML5
+        run: |
+          mkdir -p build
+          godot --headless --export "HTML5" build/index.html
+
+      - name: Upload build folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: build/web
+          publish_dir: build
